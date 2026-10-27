@@ -1,0 +1,19 @@
+# Ansible
+*.retry
+.ansible/
+collections/
+
+# Python tooling
+.venv/
+__pycache__/
+
+# Local output
+*.log
+.facts_cache/
+
+# Editor, tooling and OS noise
+.vscode/
+.claude/
+.idea/
+Thumbs.db
+desktop.ini

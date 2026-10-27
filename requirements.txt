@@ -1,0 +1,6 @@
+# The control node's tooling, pinned. ansible-lint brings its own ansible-core, so
+# linting and running must come from the same environment or the linter judges code it is
+# not the version of.
+ansible-core==2.21.5
+ansible-lint==26.10.1
+yamllint==1.38.0

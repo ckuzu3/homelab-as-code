@@ -1,0 +1,6 @@
+---
+# Pinned, so a new release of a collection cannot change what this repository does
+# without a commit that says so.
+collections:
+  - name: community.docker
+    version: "5.1.0"

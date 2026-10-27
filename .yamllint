@@ -1,0 +1,36 @@
+---
+# Deliberately aligned with what ansible-lint expects of a yamllint configuration.
+# Where the two disagree, ansible-lint refuses to offer its fix mode and prints a
+# warning on every run, and two linters arguing is worse than either rule set.
+extends: default
+
+rules:
+  line-length:
+    max: 120
+    level: warning
+
+  # Ansible's own style: two spaces, and dashes indented under their parent.
+  indentation:
+    spaces: 2
+    indent-sequences: true
+
+  truthy:
+    allowed-values: ["true", "false"]
+
+  braces:
+    max-spaces-inside: 1
+
+  # A mode written as 0644 without quotes is the integer 420, which is the classic way
+  # to set a permission nobody intended.
+  octal-values:
+    forbid-implicit-octal: true
+    forbid-explicit-octal: true
+
+  comments-indentation: false
+
+  comments:
+    min-spaces-from-content: 1
+
+ignore: |
+  collections/
+  .venv/

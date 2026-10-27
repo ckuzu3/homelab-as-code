@@ -1,0 +1,10 @@
+---
+profile: production
+
+exclude_paths:
+  - collections/
+  - .venv/
+  - .github/
+
+# Every task is named, every play is named, and nothing here relies on a default that a
+# newer Ansible might change. The production profile enforces all of that.
