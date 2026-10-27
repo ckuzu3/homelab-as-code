@@ -1,0 +1,102 @@
+---
+# Deploying is not the same as working. This playbook asks the running stack the
+# questions a person would ask after an apply, and fails if any answer is wrong.
+- name: Verify the homelab answers
+  hosts: homelab
+  become: true
+  gather_facts: false
+
+  vars:
+    base_url: "http://{{ homelab_bind_address }}"
+
+  tasks:
+    - name: Wait for Prometheus to report itself healthy
+      ansible.builtin.uri:
+        url: "{{ base_url }}:{{ prometheus_port }}/-/healthy"
+        status_code: 200
+      register: prometheus_health
+      until: prometheus_health is succeeded
+      retries: 30
+      delay: 2
+
+    - name: Ask Prometheus which targets it is scraping
+      ansible.builtin.uri:
+        url: "{{ base_url }}:{{ prometheus_port }}/api/v1/targets?state=active"
+        return_content: true
+      register: prometheus_targets
+      until: >-
+        prometheus_targets is succeeded
+        and (prometheus_targets.json.data.activeTargets | length) >= 2
+        and (prometheus_targets.json.data.activeTargets
+             | selectattr('health', 'equalto', 'up') | list | length) >= 2
+      retries: 30
+      delay: 2
+
+    - name: Fail if any configured target is not up
+      ansible.builtin.assert:
+        that:
+          - prometheus_targets.json.data.activeTargets
+            | rejectattr('health', 'equalto', 'up') | list | length == 0
+        fail_msg: >-
+          Down: {{ prometheus_targets.json.data.activeTargets
+                   | rejectattr('health', 'equalto', 'up')
+                   | map(attribute='labels.job') | list }}
+        success_msg: >-
+          {{ prometheus_targets.json.data.activeTargets | length }} targets up:
+          {{ prometheus_targets.json.data.activeTargets
+             | map(attribute='labels.job') | list }}
+
+    - name: Check that the alert rules were loaded rather than merely written
+      ansible.builtin.uri:
+        url: "{{ base_url }}:{{ prometheus_port }}/api/v1/rules"
+        return_content: true
+      register: prometheus_rules
+
+    - name: Fail if the homelab rule group is missing
+      ansible.builtin.assert:
+        that:
+          - prometheus_rules.json.data.groups | selectattr('name', 'equalto', 'homelab')
+            | list | length == 1
+          - prometheus_rules.json.data.groups | selectattr('name', 'equalto', 'homelab')
+            | map(attribute='rules') | first | length == 3
+        fail_msg: "Prometheus did not load the homelab alert rules."
+        success_msg: "Prometheus loaded the homelab rule group with 3 rules."
+
+    - name: Wait for Grafana to report itself healthy
+      ansible.builtin.uri:
+        url: "{{ base_url }}:{{ grafana_port }}/api/health"
+        return_content: true
+      register: grafana_health
+      until: grafana_health is succeeded and grafana_health.json.database == 'ok'
+      retries: 30
+      delay: 2
+
+    - name: Check that the Prometheus data source was provisioned
+      ansible.builtin.uri:
+        url: "{{ base_url }}:{{ grafana_port }}/api/datasources"
+        url_username: "{{ grafana_admin_user }}"
+        url_password: "{{ grafana_admin_password }}"
+        force_basic_auth: true
+        return_content: true
+      register: grafana_datasources
+
+    - name: Fail if Grafana has no Prometheus data source
+      ansible.builtin.assert:
+        that:
+          - grafana_datasources.json | selectattr('type', 'equalto', 'prometheus')
+            | list | length == 1
+        fail_msg: "Grafana came up without the provisioned data source."
+        success_msg: "Grafana has the provisioned Prometheus data source."
+
+    - name: Check that node-exporter is actually measuring this host
+      ansible.builtin.uri:
+        url: "{{ base_url }}:{{ node_exporter_port }}/metrics"
+        return_content: true
+      register: node_metrics
+
+    - name: Fail if node-exporter reports no filesystem
+      ansible.builtin.assert:
+        that:
+          - "'node_filesystem_size_bytes' in node_metrics.content"
+        fail_msg: "node-exporter is up but reports nothing about the host filesystem."
+        success_msg: "node-exporter reports host filesystem metrics."
