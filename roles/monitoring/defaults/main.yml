@@ -1,0 +1,3 @@
+---
+monitoring_dir: "{{ homelab_root }}/monitoring"
+monitoring_project_name: homelab

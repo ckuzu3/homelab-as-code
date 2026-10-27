@@ -1,0 +1,13 @@
+---
+# Managed by Ansible. Edit roles/monitoring/templates/grafana-datasource.yml.j2 instead.
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    # Provisioned rather than clicked. A data source added by hand is a step nobody
+    # remembers when the volume is recreated.
+    editable: false

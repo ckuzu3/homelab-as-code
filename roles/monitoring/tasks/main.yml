@@ -1,0 +1,57 @@
+---
+- name: Create the monitoring directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - "{{ monitoring_dir }}"
+    - "{{ monitoring_dir }}/prometheus"
+    - "{{ monitoring_dir }}/grafana/provisioning/datasources"
+
+- name: Write the Prometheus configuration
+  ansible.builtin.template:
+    src: prometheus.yml.j2
+    dest: "{{ monitoring_dir }}/prometheus/prometheus.yml"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Recreate the monitoring stack
+
+- name: Write the Prometheus alert rules
+  ansible.builtin.template:
+    src: alert-rules.yml.j2
+    dest: "{{ monitoring_dir }}/prometheus/alert-rules.yml"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Recreate the monitoring stack
+
+- name: Provision the Grafana data source
+  ansible.builtin.template:
+    src: grafana-datasource.yml.j2
+    dest: "{{ monitoring_dir }}/grafana/provisioning/datasources/prometheus.yml"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Recreate the monitoring stack
+
+- name: Write the compose file
+  ansible.builtin.template:
+    src: compose.yaml.j2
+    dest: "{{ monitoring_dir }}/compose.yaml"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Recreate the monitoring stack
+
+# pull: missing rather than always. The image tags are pinned, so pulling on every run
+# would cost a network round trip to be told the same digest.
+- name: Bring the monitoring stack up
+  community.docker.docker_compose_v2:
+    project_src: "{{ monitoring_dir }}"
+    project_name: "{{ monitoring_project_name }}"
+    state: present
+    pull: missing

@@ -1,0 +1,10 @@
+---
+# Compose only notices a changed configuration file when the container is recreated, so a
+# template change has to say so. Without this handler the playbook reports changed and the
+# running stack keeps the old configuration, which is the worst of both.
+- name: Recreate the monitoring stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ monitoring_dir }}"
+    project_name: "{{ monitoring_project_name }}"
+    state: present
+    recreate: always
