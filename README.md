@@ -1,5 +1,7 @@
 # homelab-as-code
 
+[![CI](https://github.com/ckuzu3/homelab-as-code/actions/workflows/ci.yml/badge.svg)](https://github.com/ckuzu3/homelab-as-code/actions/workflows/ci.yml)
+
 My homelab's monitoring stack, built entirely from code. One command turns a plain
 Ubuntu machine into a host running Prometheus, Grafana and node-exporter, configured and
 wired up, with the result checked rather than assumed.
