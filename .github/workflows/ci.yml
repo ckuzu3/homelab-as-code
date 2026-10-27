@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  # The pipeline does the same thing a person does: lint it, build it on a machine that
+  # has nothing on it, ask the running stack whether it works, and then run it again and
+  # insist that nothing changes. A runner is a clean machine every time, which is exactly
+  # the case this repository claims to handle.
+  build:
+    name: Lint, build, verify, prove idempotence
+    runs-on: ubuntu-latest
+
+    env:
+      # The runner image already has Docker from Docker's own repository. Ansible should
+      # configure and start it, not fight apt over which package owns it.
+      EXTRA_VARS: "-e docker_manage_packages=false"
+      ANSIBLE_FORCE_COLOR: "1"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install the pinned control node tooling
+        run: pip install -r requirements.txt
+
+      - name: Install the pinned collections
+        run: make deps
+
+      - name: Lint
+        run: make lint
+
+      - name: Build the homelab
+        run: make apply
+
+      - name: Verify the running stack
+        run: make verify
+
+      - name: Prove it is idempotent
+        run: make idempotence
+
+      - name: Show what is running
+        if: always()
+        run: docker ps --all --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
+
+      - name: Container logs on failure
+        if: failure()
+        run: docker compose -f /opt/homelab/monitoring/compose.yaml -p homelab logs --tail 50
