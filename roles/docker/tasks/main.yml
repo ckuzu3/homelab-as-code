@@ -1,0 +1,23 @@
+---
+- name: Install Docker and the compose plugin
+  ansible.builtin.apt:
+    name: "{{ docker_packages }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+  when: docker_manage_packages | bool
+
+- name: Configure the Docker daemon
+  ansible.builtin.template:
+    src: daemon.json.j2
+    dest: /etc/docker/daemon.json
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart docker
+
+- name: Make sure Docker is running and starts at boot
+  ansible.builtin.systemd_service:
+    name: docker
+    state: started
+    enabled: true

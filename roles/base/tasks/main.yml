@@ -1,0 +1,18 @@
+---
+# cache_valid_time matters more than it looks: without it the package index is refreshed
+# on every run, which takes seconds and reports changed, and a playbook that is never
+# green is a playbook nobody reads.
+- name: Install the packages every later role assumes
+  ansible.builtin.apt:
+    name: "{{ base_packages }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Create the directory the whole stack lives under
+  ansible.builtin.file:
+    path: "{{ homelab_root }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"

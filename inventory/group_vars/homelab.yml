@@ -1,0 +1,41 @@
+---
+# Everything the stack can be told, in one place. A role reads these; none of them is
+# hard-coded in a template.
+
+homelab_root: /opt/homelab
+homelab_timezone: Europe/Zurich
+
+# Published ports bind to localhost on purpose. A homelab service reachable from the
+# whole network is a decision, and a decision should take an edit rather than a default.
+homelab_bind_address: "127.0.0.1"
+
+# Image tags are pinned. `latest` means the stack is a different stack every time it is
+# pulled, which is the opposite of what this repository is for.
+monitoring_images:
+  prometheus: "prom/prometheus:v3.7.3"
+  grafana: "grafana/grafana:12.2.1"
+  node_exporter: "prom/node-exporter:v1.9.1"
+
+prometheus_port: 9090
+prometheus_retention: 15d
+prometheus_scrape_interval: 15s
+
+grafana_port: 3000
+# A local default for a service bound to localhost. Anything that leaves this machine
+# belongs in Ansible Vault, and the README says how.
+grafana_admin_user: admin
+grafana_admin_password: admin
+
+node_exporter_port: 9100
+
+# node-exporter's own documentation mounts the host root with rslave, so that filesystems
+# mounted after the container starts still show up. That needs the host's root to be a
+# shared or slave mount, which it is on a systemd host and is not inside WSL2, where
+# Docker refuses the container outright. A plain read-only bind works everywhere and only
+# costs visibility of mounts created later. Set this to "ro,rslave" on a real host.
+node_exporter_rootfs_mount_options: "ro"
+
+# Docker writes container logs until the disk is full unless it is told otherwise. This
+# is the single most common way a homelab dies quietly.
+docker_log_max_size: "10m"
+docker_log_max_files: "3"

@@ -1,0 +1,13 @@
+---
+- name: Build the homelab from code
+  hosts: homelab
+  become: true
+  gather_facts: true
+
+  roles:
+    - role: base
+      tags: [base]
+    - role: docker
+      tags: [docker]
+    - role: monitoring
+      tags: [monitoring]

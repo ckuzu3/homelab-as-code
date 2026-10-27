@@ -1,0 +1,9 @@
+---
+docker_packages:
+  - docker.io
+  - docker-compose-v2
+
+# Set to false where Docker is installed by something else, which is the case on a
+# GitHub runner and on any host that uses Docker's own repository. Ansible then leaves
+# the packages alone and only configures and starts the daemon.
+docker_manage_packages: true
